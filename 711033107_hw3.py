@@ -51,34 +51,57 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle('氣象資料')
         self.data = self.getData()
         self.showData()
-        self.pBut.clicked.connect(self.get_reflectivity)
+        # self.pBut.clicked.connect(self.get_reflectivity)
         self.cBox_city.currentIndexChanged.connect(self.showData)
+        self.cBox_rain.currentIndexChanged.connect(self.RainData)
 
         # 取得雷達回波圖
-    def get_reflectivity(self):
-        url = 'https://www.cwb.gov.tw/V8/C/W/OBS_Radar_rain.html'
-        resp = requests.get(url)
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        results = soup.find_all("div", class_ = "zoomHolder")
-        picture = 'https://www.cwb.gov.tw' + results[0].img.get('src')
-        img = requests.get(picture)
+    def RainData(self):
         path_ = 'images'
-        if not os.path.exists(path_) :
-            os.mkdir(path_)
-
         img_dir = "images/"
-        # img = requests.get(picture)
-        with open(img_dir + "picture.jpg", "wb") as file:
-            file.write(img.content)
+        if not os.path.exists(path_) :
+                os.mkdir(path_)
+        if self.cBox_rain.currentText() == '雷達回波':
+            self.graphWidget.clear()
+            url = 'https://www.cwb.gov.tw/V8/C/W/OBS_Radar_rain.html'
+            resp = requests.get(url)
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            results = soup.find_all("div", class_ = "zoomHolder")
+            picture = 'https://www.cwb.gov.tw' + results[0].img.get('src')
+            img = requests.get(picture)
+            # img = requests.get(picture)
+            with open(img_dir + "picture.jpg", "wb") as file:
+                file.write(img.content)
 
-        image = mpimg.imread(img_dir + 'picture.jpg')
-        img_item = pg.ImageItem(image, axisOrder='row-major')   
-        self.graphWidget.addItem(img_item)
-        self.graphWidget.invertY(True)
-        self.graphWidget.getAxis('bottom').setTicks('')
-        self.graphWidget.getAxis('left').setTicks('')
-        self.graphWidget.setAspectLocked(lock=True, ratio=1)
-        os.remove(img_dir + "picture.jpg")
+            image = mpimg.imread(img_dir + 'picture.jpg')
+            img_item = pg.ImageItem(image, axisOrder='row-major')   
+            self.graphWidget.addItem(img_item)
+            self.graphWidget.invertY(True)
+            self.graphWidget.getAxis('bottom').setTicks('')
+            self.graphWidget.getAxis('left').setTicks('')
+            self.graphWidget.setAspectLocked(lock=True, ratio=1)
+            os.remove(img_dir + "picture.jpg")
+
+        if self.cBox_rain.currentText() == '日累積雨量':
+            self.graphWidget.clear()
+            if int(time.strftime("%M")) > 20:
+                rightnow = time.strftime("%Y-%m-%d_%H00")
+            else:
+                rightnow = (datetime.datetime.now() + datetime.timedelta(hours = -1)).strftime("%Y-%m-%d_%H00")
+            picture = f'https://www.cwb.gov.tw/Data/rainfall/{rightnow}.QZJ8.jpg'
+            img = requests.get(picture)
+            # results
+            with open(img_dir + "picture.jpg", "wb") as file:
+                file.write(img.content)
+
+            image = mpimg.imread(img_dir + 'picture.jpg')
+            img_item = pg.ImageItem(image, axisOrder='row-major')   
+            self.graphWidget.addItem(img_item)
+            self.graphWidget.invertY(True)
+            self.graphWidget.getAxis('bottom').setTicks('')
+            self.graphWidget.getAxis('left').setTicks('')
+            self.graphWidget.setAspectLocked(lock=True, ratio=1)
+            os.remove(img_dir + "picture.jpg")
 
     def getData(self):
         api = 'https://opendata.cwb.gov.tw/api/v1/rest/datastore/'
