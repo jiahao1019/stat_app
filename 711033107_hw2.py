@@ -47,14 +47,15 @@ class MainWindow(QtWidgets.QMainWindow):
  
     def __init__(self):
         super().__init__()
-        uic.loadUi('SQL_showimg.ui', self)
+        uic.loadUi('711033107_hw2_Main.ui', self)
         self.table = self.tableView
         self.authors = ''
         self.page = 1
         self.one_page_rows = 10
         self.rows = ''
          
-        database = r'C:\Users\user\Downloads\SQL\test.sqlite'
+        # database = r'C:\Users\user\Downloads\SQL\test.sqlite'
+        database = 'test.sqlite'
         # create a database connect
         self.conn = create_connection(database)
         self.setWindowTitle('Paper Query System')
@@ -70,17 +71,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cBox.currentIndexChanged.connect(self.set_page)
 
     # Slots
-    def searchByAuthor(self):
+    def searchByAuthor(self):  #, Title, EventType, Abstract, PaperText
         self.page = 1
         sql = 'select B.Id, Title, EventType, Abstract, PaperText, imgfile from paperauthors A, papers B, authors C where A.paperid = B.id and A.authorid = C.id'
         author = self.lineEdit_author.text()
-        title = self.lineEdit_title.text()
+        title = self.lineEdit_title.text() 
+
         if (author and title) != '':
-            sql = sql +  " and C.name like '%" + author + "%' and B.title like '%" + title + "%'"
+            sql = sql + " and C.name like '%" + author + "%' and B.title like '%" + title + "%'"
         if author == '':
-            sql = sql +  " and B.title like '%" + title + "%'"
+            sql = sql + " and B.title like '%" + title + "%'"
         if title == '':
-            sql = sql +  " and C.name like '%" + author + "%'"
+            sql = sql + " and C.name like '%" + author + "%'"
+
+        if self.checkBox_poster.isChecked():
+            type1 = "'Poster',"
+        else:
+            type1 = ''
+
+        if self.checkBox_spotlight.isChecked():
+            type2 = "'Spotlight',"
+        else:
+            type2 = ''
+
+        if self.checkBox_oral.isChecked():
+            type3 = "'Oral',"
+        else:
+            type3 = ''
+        
+        if (type1 and type2 and type3) == '':
+            sql = sql
+        if (type1 or type2 or type3) != '':
+            sql = sql + f" and B.eventtype in ({type1}{type2}{type3})"
+            sql = sql[:-2] + ")"
 
         with self.conn:
             self.rows = SQLExecute(self, sql)
@@ -93,7 +116,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def call_subWin(self, mi):
         col_list = list(self.df.columns)
         # display Abstract on TextBrowser, then go fetch author names
-        print(mi.row()+(self.page-1)*10)
         abstract = self.df.iloc[mi.row()+(self.page-1)*10, col_list.index('Abstract')]
         papertext = self.df.iloc[mi.row()+(self.page-1)*10, col_list.index('PaperText')]
         title = self.df.iloc[mi.row()+(self.page-1)*10, col_list.index('Title')]
@@ -233,11 +255,11 @@ class AnotherWindow(QWidget):
     will appear as a free-floating window as we want.
     """
 
-    img_dir = r'C:\Users\user\Downloads\SQL\NIP2015_Images'
+    img_dir = 'NIP2015_Images'
 
     def __init__(self):
         super().__init__()
-        uic.loadUi('subwindow.ui', self)
+        uic.loadUi('711033107_hw2_Sub.ui', self)
 
         # Signal
         self.p_But_back.clicked.connect(self.back)
@@ -254,48 +276,13 @@ class AnotherWindow(QWidget):
         self.graphWidget.invertY(True)
         self.graphWidget.getAxis('bottom').setTicks('')
         self.graphWidget.getAxis('left').setTicks('')
+        self.graphWidget.hideAxis('left')
+        self.graphWidget.hideAxis('bottom')
+        self.graphWidget.setBackground((216,216,216))
         self.graphWidget.setAspectLocked(lock=True, ratio=1)
      
     def back(self):
         self.close()
-
-# 將圖片檔名加入SQLdatabase
-# def create_connection(db_file):
-#     conn = None
-#     try:
-#         conn = sqlite3.connect(db_file)
-#     except Error as e:
-#         print(e)
- 
-#     return conn
-
-# def fetch_paperid(conn):
-#     cur = conn.cursor()
-#     sql = "select id from papers"
-#     cur.execute(sql)
-#     rows = cur.fetchall()
-#     return rows
-
-# def update_papers(conn, params):
-     
-#     sql = "UPDATE papers set imgfile = ? WHERE id = ?"
-#     cur = conn.cursor()
-#     cur.execute(sql, params)
-#     conn.commit()
-
-# def main():
-#     database = r'C:\Users\user\Downloads\SQL\test.sqlite' # 資料庫的位置
-#     file_src = r'C:\Users\user\Downloads\SQL\NIP2015_Images'  # 圖片檔的位置
-#     picName = os.listdir(file_src)
-#     # create a database connection
-#     conn = create_connection(database)
-#     # fetch paper id
-#     paperid = fetch_paperid(conn)
-#     with conn:
-#         for i in range(len(paperid)):
-#             update_papers(conn, (picName[i], paperid[i][0]))
- 
-#     conn.close()
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
