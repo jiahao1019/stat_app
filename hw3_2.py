@@ -72,6 +72,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cBox_city.currentIndexChanged.connect(self.showData)
         self.pBut_rain.clicked.connect(self.showbigimg)
         self.pBut_temp.clicked.connect(self.showbigimg_temp)
+        self.pBut_cloud.clicked.connect(self.showbigimg_cloud)
+        self.pBut_TW.clicked.connect(self.show_map)
     
     # 取得雷達回波圖
     def RainData(self):
@@ -80,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(path_) :
             os.mkdir(path_)
         self.graphWidget.clear()
+        self.graphWidget.setBackground((230, 255, 251))
         url = 'https://www.cwb.gov.tw/V8/C/W/OBS_Radar_rain.html'
         resp = requests.get(url)
         soup = BeautifulSoup(resp.text, 'html.parser')
@@ -108,6 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 os.mkdir(path_)
 
         self.graphWidget_temp.clear()
+        self.graphWidget_temp.setBackground((230, 255, 251))
         if int(time.strftime("%M")) > 15:
             rightnow = time.strftime("%Y-%m-%d_%H00")
         else:
@@ -132,14 +136,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def CloudData(self):
         path_ = 'images'
         img_dir = "images/"
-        if not os.path.exists(path_) :
+        if not os.path.exists(path_):
                 os.mkdir(path_)
 
         self.graphWidget_cloud.clear()
-        # if int(time.strftime("%M")) > 15:
-        #     rightnow = time.strftime("%Y-%m-%d_%H00")
-        # else:
-        #     rightnow = (datetime.datetime.now() + datetime.timedelta(hours = -1)).strftime("%Y-%m-%d_%H00")
+        self.graphWidget_cloud.setBackground((230, 255, 251))
         picture = 'https://www.cwb.gov.tw/Data/satellite/TWI_IR1_CR_800/TWI_IR1_CR_800.jpg'
         img = requests.get(picture)
         # results
@@ -167,6 +168,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def showbigimg_temp(self):
         self.anotherwindow = AnotherWindow()
         for i in ['溫度分布圖', '紫外線觀測']:
+            self.anotherwindow.cBox_rain.addItem(str(i))
+        self.anotherwindow.passInfo()
+        self.anotherwindow.show()
+
+    def showbigimg_cloud(self):
+        self.anotherwindow = AnotherWindow()
+        for i in ['真實色影像', '紅外線雲圖']:
             self.anotherwindow.cBox_rain.addItem(str(i))
         self.anotherwindow.passInfo()
         self.anotherwindow.show()
@@ -255,6 +263,13 @@ class AnotherWindow(QWidget):
     def passInfo(self):
         path_ = 'images'
         img_dir = "images/"
+        self.graphWidget_rain.setBackground((216,216,216))
+        self.graphWidget_rain.invertY(True)
+        self.graphWidget_rain.hideAxis('left')
+        self.graphWidget_rain.hideAxis('bottom')
+        self.graphWidget_rain.getAxis('bottom').setTicks('')
+        self.graphWidget_rain.getAxis('left').setTicks('')
+        self.graphWidget_rain.setAspectLocked(lock = True, ratio=1)
         if not os.path.exists(path_) :
                 os.mkdir(path_)
         if self.cBox_rain.currentText() == '溫度分布圖':
@@ -272,12 +287,6 @@ class AnotherWindow(QWidget):
             image = mpimg.imread(img_dir + 'temp.jpg')
             img_item = pg.ImageItem(image, axisOrder='row-major')   
             self.graphWidget_rain.addItem(img_item)
-            self.graphWidget_rain.invertY(True)
-            self.graphWidget_rain.hideAxis('left')
-            self.graphWidget_rain.hideAxis('bottom')
-            self.graphWidget_rain.getAxis('bottom').setTicks('')
-            self.graphWidget_rain.getAxis('left').setTicks('')
-            self.graphWidget_rain.setAspectLocked(lock = True, ratio=1)
             os.remove(img_dir + "temp.jpg")
         
         elif self.cBox_rain.currentText() == '紫外線觀測':
@@ -291,12 +300,6 @@ class AnotherWindow(QWidget):
             image = mpimg.imread(img_dir + 'UVI.jpg')
             img_item = pg.ImageItem(image, axisOrder='row-major')   
             self.graphWidget_rain.addItem(img_item)
-            self.graphWidget_rain.invertY(True)
-            self.graphWidget_rain.hideAxis('left')
-            self.graphWidget_rain.hideAxis('bottom')
-            self.graphWidget_rain.getAxis('bottom').setTicks('')
-            self.graphWidget_rain.getAxis('left').setTicks('')
-            self.graphWidget_rain.setAspectLocked(lock = True, ratio=1)
             os.remove(img_dir + "UVI.jpg")
 
         elif self.cBox_rain.currentText() == '日累積雨量':
@@ -314,13 +317,34 @@ class AnotherWindow(QWidget):
             image = mpimg.imread(img_dir + 'rain.jpg')
             img_item = pg.ImageItem(image, axisOrder='row-major')   
             self.graphWidget_rain.addItem(img_item)
-            self.graphWidget_rain.invertY(True)
-            self.graphWidget_rain.hideAxis('left')
-            self.graphWidget_rain.hideAxis('bottom')
-            self.graphWidget_rain.getAxis('bottom').setTicks('')
-            self.graphWidget_rain.getAxis('left').setTicks('')
-            self.graphWidget_rain.setAspectLocked(lock=True, ratio=1)
             os.remove(img_dir + "rain.jpg")
+        
+        elif self.cBox_rain.currentText() == '真實色影像':
+            self.graphWidget_rain.clear()
+            picture = 'https://www.cwb.gov.tw/Data/satellite/TWI_VIS_TRGB_1375/TWI_VIS_TRGB_1375.jpg'
+            img = requests.get(picture)
+            # results
+            with open(img_dir + "cloud.jpg", "wb") as file:
+                file.write(img.content)
+
+            image = mpimg.imread(img_dir + 'cloud.jpg')
+            img_item = pg.ImageItem(image, axisOrder='row-major')   
+            self.graphWidget_rain.addItem(img_item)
+            os.remove(img_dir + "cloud.jpg")
+
+        elif self.cBox_rain.currentText() == '紅外線雲圖':
+            self.graphWidget_rain.clear()
+            picture = 'https://www.cwb.gov.tw/Data/satellite/TWI_IR1_CR_800/TWI_IR1_CR_800.jpg'
+            img = requests.get(picture)
+            # results
+            with open(img_dir + "cloud.jpg", "wb") as file:
+                file.write(img.content)
+
+            image = mpimg.imread(img_dir + 'cloud.jpg')
+            img_item = pg.ImageItem(image, axisOrder='row-major')   
+            self.graphWidget_rain.addItem(img_item)
+            os.remove(img_dir + "cloud.jpg")
+
         else:
             if self.cBox_rain.currentText() == '樹林雷達回波':
                 location = 'SL'
@@ -342,12 +366,6 @@ class AnotherWindow(QWidget):
             image = mpimg.imread(img_dir + 'picture.jpg')
             img_item = pg.ImageItem(image, axisOrder='row-major')   
             self.graphWidget_rain.addItem(img_item)
-            self.graphWidget_rain.invertY(True)
-            self.graphWidget_rain.hideAxis('left')
-            self.graphWidget_rain.hideAxis('bottom')
-            self.graphWidget_rain.getAxis('bottom').setTicks('')
-            self.graphWidget_rain.getAxis('left').setTicks('')
-            self.graphWidget_rain.setAspectLocked(lock=True, ratio=1)
             os.remove(img_dir + "picture.jpg")
   
     def back(self):
